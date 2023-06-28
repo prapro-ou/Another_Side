@@ -8,16 +8,16 @@ class GameState {
   constructor() {
     this.players = [];
     this.enemys = [];
-    this.players_count = 4;
-    this.enemys_count =3;
+    const players_count = 4;
+    const enemies_count = 3;
 
     // spawn players id = 0 ... player_count
-    for (let i = 0; i < this.players_count; i++) {
+    for (let i = 0; i < players_count; i++) {
       this.players.push(new Player(i, 100 * i, 100));
     }
     // spawn enemys id = players_count+1 ... players_count+enemys_count
-    for (let i = 0; i < this.enemys_count; i++) {
-    this.enemys.push(new Enemy(this.players_count +  i, 100 * i, 200));
+    for (let i = 0; i < enemies_count; i++) {
+      this.enemys.push(new Enemy(i, 100 * i, 200));
     }
   }
 
@@ -52,8 +52,8 @@ class Screen {
   }
 
   /// id に対応するキャラクタの pose パターンを描画
-  put_sprite(x, y, id, pose = 0) {
-    this.sprites.put_sprite(this.ctx, x, y, id, pose);
+  put_sprite(x, y, id, pose = 0, side=0) {
+    this.sprites[side].put_sprite(this.ctx, x, y, id, pose);
   }
 }
 
@@ -97,9 +97,7 @@ let screen = new Screen(
   1024,
   576,
   document.getElementById('canvas').getContext('2d'),
-  new Sprite('assets/sprites.png', 60),
-  //this.sprites.push(new Sprite('assets/sprites.png', 60)),
-  //this.sprites.push(new Sprite('assets/sprites_2.png', 60)),
+  [new Sprite('assets/demon.png', 60), new Sprite('assets/human.png', 60)],
 );
 let gs = new GameState();
 
