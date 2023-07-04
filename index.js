@@ -97,7 +97,7 @@ let screen = new Screen(
   1024,
   576,
   document.getElementById('canvas').getContext('2d'),
-  [new Sprite('assets/demon.png', 60), new Sprite('assets/human.png', 60)],
+  [new Sprite('assets/image/demon.png', 60), new Sprite('assets/image/human.png', 60)],
 );
 let gs = new GameState();
 
