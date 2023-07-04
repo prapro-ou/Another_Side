@@ -7,7 +7,7 @@ puml:
 # 基本的に最初の一回だけ使用し，以降は start を使う．
 # 開発メンバはリーダーの支持がない限り使用しない．
 run:
-	docker run --name another_side -v $PWD:/usr/share/nginx/html:ro -p 8080:80 -d nginx
+	docker run --name another_side -v ${PWD}:/usr/share/nginx/html:ro -p 8080:80 -d nginx
 
 # Docker でゲーム用のサーバを立てて Web ページを開く．
 # 基本的にこのコマンドでサーバを立てる．
