@@ -1,0 +1,31 @@
+@startuml example
+class Character {
+    id
+    x
+    y
+    pose
+    speed
+    offensive_power
+    attack_speed
+    attack_method
+}
+
+class Player {
+    side
+    draw()
+}
+
+class Enemy {
+    side
+    draw()
+}
+
+class Swordsman {
+
+}
+
+Character <|-- Player
+Character <|-- Enemy
+Enemy <|-- Swordsman
+
+@enduml
