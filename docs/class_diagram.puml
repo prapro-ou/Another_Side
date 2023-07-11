@@ -3,10 +3,12 @@ class Stage {
 Stage_name
 life
 num_of_enemy
+bgm()
 }
 
 class Stage_select {
 Stage_draw()
+bgm()
 }
 
 class Character {
@@ -15,6 +17,7 @@ class Character {
     y
     pose
     color
+    sounds()
 }
 
 class Player {
@@ -24,6 +27,9 @@ class Player {
     attack_speed
     attack_method
     skill
+    skill_duration
+    skill_1st
+    skill_ct
 }
 
 class Ghost {
