@@ -14,18 +14,16 @@ class Character {
     x
     y
     pose
-    hp
-    move_speed
-    offensive_power
-    attack_speed
-    attack_method
-    skill
     color
 }
 
 class Player {
     side
     draw()
+    offensive_power
+    attack_speed
+    attack_method
+    skill
 }
 
 class Ghost {
@@ -38,6 +36,8 @@ class Skeleton {
 class Enemy {
     side
     draw()
+    hp
+    move_speed
 }
 
 class Hero {
