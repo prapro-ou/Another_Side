@@ -1,34 +1,69 @@
 import { Player } from "./lib/character.js";
-import { EnemyArray } from "./lib/enemy_arryay.js";
+import { EnemyArray, PlayerArray } from "./lib/character_array.js";
 
 const debug = true;
 // GameStage
 
 class GameStage {
+  static life = 3;
+  static dead_line = 80;
   constructor(id) {
     this.stage_name = id;
-    this.life = 3;
-    this.players = [];
+    this.players = PlayerArray;
     this.enemys = EnemyArray[id];
-    const players_count = 4;
     this.start_time = Date.now()/1000;
-
-    // spawn players id = 0 ... player_count
-    for (let i = 0; i < players_count; i++) {
-      this.players.push(new Player(i, 100 * i, 100));
-    }
+    this.defeated_enemy = 0
   }
 
+  // ステージの描画
   draw(screen) {
     screen.clear();
+
     this.players.forEach(player => {
       player.draw(screen);
     });
+
     this.enemys
     .filter(enemy => (enemy.pop_time <= (Date.now()/1000 - this.start_time)) && enemy.hp > 0)
     .forEach(enemy => {
       enemy.draw(screen);
     });
+
+    screen.ctx.fillStyle = "#FF0000";
+    screen.ctx.font = ' 36px sans-serif';
+    screen.ctx.fillText(`残機: ${GameStage.life}`, 20, 50);
+    screen.ctx.fillText(`撃破数: ${this.defeated_enemy} / ${this.enemys.length}`, 500, 50)
+
+    // ゲームオーバー処理
+    if (GameStage.life <= 0) {
+      screen.ctx.fillStyle = "#FF0000";
+      screen.ctx.font = ' 120px sans-serif';
+      screen.ctx.fillText("GAME OVER",screen.height/3, screen.width/3, screen.width);
+      return;
+    }
+  }
+
+  // 状態の更新
+  update() {
+    this.players.forEach(player => {
+      player.update();
+    });
+
+    this.enemys
+    .filter(enemy => (enemy.pop_time <= (Date.now()/1000 - this.start_time)) && enemy.hp > 0)
+    .forEach(enemy => {
+      enemy.pos_update();
+      this.reach(enemy);
+    });
+  }
+
+  // 敵が防衛ラインに到達したか？
+  reach(enemy) {
+    if (enemy.x <= GameStage.dead_line) {
+      enemy.hp_update(enemy.hp);
+      GameStage.life -= 1;
+      this.defeated_enemy += 1;
+    }
   }
 }
 ////////////////////////////////////////////////////////////////
@@ -113,7 +148,9 @@ let game_loop = (timestamp) => {
   }
 
   gs.draw(screen);
-
+  if (GameStage.life > 0) {
+    gs.update();
+  }
   prev_timestamp = timestamp;
   requestAnimationFrame(game_loop);
 
