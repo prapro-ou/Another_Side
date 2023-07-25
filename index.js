@@ -1,23 +1,21 @@
 import { Player } from "./lib/character.js";
-import { Enemy } from "./lib/character.js";
+import { EnemyArray } from "./lib/enemy_arryay.js";
 
 const debug = true;
-// GameState
+// GameStage
 
-class GameState {
-  constructor() {
+class GameStage {
+  constructor(id) {
+    this.stage_name = id;
+    this.life = 3;
     this.players = [];
-    this.enemys = [];
+    this.enemys = EnemyArray[id];
     const players_count = 4;
-    const enemies_count = 3;
+    this.start_time = Date.now()/1000;
 
     // spawn players id = 0 ... player_count
     for (let i = 0; i < players_count; i++) {
       this.players.push(new Player(i, 100 * i, 100));
-    }
-    // spawn enemys id = players_count+1 ... players_count+enemys_count
-    for (let i = 0; i < enemies_count; i++) {
-      this.enemys.push(new Enemy(i, 100 * i, 200));
     }
   }
 
@@ -26,7 +24,9 @@ class GameState {
     this.players.forEach(player => {
       player.draw(screen);
     });
-    this.enemys.forEach(enemy => {
+    this.enemys
+    .filter(enemy => (enemy.pop_time <= (Date.now()/1000 - this.start_time)) && enemy.hp > 0)
+    .forEach(enemy => {
       enemy.draw(screen);
     });
   }
@@ -99,7 +99,7 @@ let screen = new Screen(
   document.getElementById('canvas').getContext('2d'),
   [new Sprite('assets/image/demon.png', 60), new Sprite('assets/image/human.png', 60)],
 );
-let gs = new GameState();
+let gs = new GameStage(0);
 
 let start = null;
 let prev_timestamp = null;
