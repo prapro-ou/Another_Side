@@ -6,12 +6,13 @@ const debug = true;
 
 class GameStage {
   static life = 3;
-  static dead_line = 80;
+  static dead_line = 110;
   constructor(id) {
     this.stage_name = id;
     this.players = PlayerArray;
     this.enemys = EnemyArray[id];
-    this.start_time = Date.now()/1000;
+    this.attacks = [];
+    this.start_time = Date.now();
     this.defeated_enemy = 0
   }
 
@@ -24,9 +25,56 @@ class GameStage {
     });
 
     this.enemys
-    .filter(enemy => (enemy.pop_time <= (Date.now()/1000 - this.start_time)) && enemy.hp > 0)
+    .filter(enemy => (enemy.pop_time <= (Date.now() - this.start_time )/1000) && enemy.hp > 0)
     .forEach(enemy => {
       enemy.draw(screen);
+    });
+
+    this.players.forEach(player =>{
+      const now = Date.now();
+      if((now - player.last_attacked_time)/1000 > player.attack_interval && this.is_not_enemy_empty()){
+        this.attacks.push(player.update(this.find_nearest_enemy()));
+        player.last_attacked_time = now;
+      }
+    });
+
+
+    this.attacks.forEach(attack => {
+      //現状は狙った敵が死んだ後に攻撃対象を別の敵に変更する
+      //TODO:死んだ後もそのまま画面外まで直進
+      const targetEnemy = this.find_nearest_enemy(); 
+      if(targetEnemy == null){
+        return;
+      }
+      attack.update(targetEnemy.x,targetEnemy.y);
+      attack.draw(screen);
+
+      //当たった時の処理
+      if(attack.areaAttack == 0){
+        if (Math.abs(attack.x - targetEnemy.x) < 10 && Math.abs(attack.y - targetEnemy.y) < 10) {
+          targetEnemy.hp -= attack.power;
+
+          if(targetEnemy.hp <= 0) this.defeated_enemy += 1;
+
+          const index = this.attacks.indexOf(attack);
+          this.attacks.splice(index, 1);
+        }
+      }
+      else if(attack.areaAttack ==1){
+        if (Math.abs(attack.x - targetEnemy.x) < 10 && Math.abs(attack.y - targetEnemy.y) < 10) {
+          this.apply_area_damage(targetEnemy.x, targetEnemy.y, attack.power);
+
+          const index = this.attacks.indexOf(attack);
+          this.attacks.splice(index, 1);
+        }
+      }
+      else if(attack.areaAttack ==2){
+        this.apply_penetration_damage(attack.x, attack.y, attack.power);
+        if(attack.x > 1024){
+          const index = this.attacks.indexOf(attack);
+          this.attacks.splice(index, 1);
+        }
+      }
     });
 
     screen.ctx.fillStyle = "#FF0000";
@@ -43,14 +91,66 @@ class GameStage {
     }
   }
 
+
+
+  is_not_enemy_empty(){
+    let flag = 0;
+    this.enemys.forEach(enemy => {
+      if(enemy.hp > 0) flag = 1;
+    });
+    return flag;
+  }
+
+  //最も近い敵を探す
+  find_nearest_enemy() {
+    let nearestEnemy = null;
+    let minX = 1024;
+    
+    this.enemys
+    .filter(enemy => enemy.hp > 0)
+    .forEach((enemy) => {
+      if (enemy.x < minX) {
+        minX = enemy.x;
+        nearestEnemy = enemy;
+      }
+    });
+    
+    return nearestEnemy;
+  }
+
+  //範囲攻撃の定義
+  apply_area_damage(x, y, damage){
+    this.enemys
+    .filter(enemy => enemy.hp > 0)
+    .forEach((enemy) => {
+      const distance = Math.sqrt((x - enemy.x) ** 2 + (y - enemy.y) ** 2);
+      if (distance <= 50) {
+        enemy.hp -= damage;
+        if(enemy.hp <= 0) this.defeated_enemy += 1;
+      }
+    });
+  }
+  
+  apply_penetration_damage(x, y, damage){
+    this.enemys
+    .filter(enemy => enemy.hp > 0)
+    .forEach((enemy) => {
+      const distance = Math.sqrt((x - enemy.x) ** 2 + (y - enemy.y) ** 2);
+      if (distance <= 10) {
+        enemy.hp -= damage;
+        if(enemy.hp <= 0) this.defeated_enemy += 1;
+      }
+    });
+  }
+
   // 状態の更新
   update() {
-    this.players.forEach(player => {
-      player.update();
-    });
+    // this.players.forEach(player => {
+    //   player.update();
+    // });
 
     this.enemys
-    .filter(enemy => (enemy.pop_time <= (Date.now()/1000 - this.start_time)) && enemy.hp > 0)
+    .filter(enemy => (enemy.pop_time <= (Date.now() - this.start_time)/1000) && enemy.hp > 0)
     .forEach(enemy => {
       enemy.pos_update();
       this.reach(enemy);
