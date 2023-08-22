@@ -7,21 +7,38 @@ const debug = true;
 class GameStage {
   static life = 3;
   static dead_line = 110;
-  constructor(id) {
+  static gameover_bgm = new Audio('assets/music/bgm/gameover_loop.mp3');
+  constructor(id, bgm = new Audio('assets/music/bgm/battle1_loop.mp3')) {
     this.stage_name = id;
+    this.bgm = bgm;
+    this.bgm.volume = 0.1;
+    this.bgm.loop = true;
     this.players = PlayerArray;
     this.enemys = EnemyArray[id];
     this.attacks = [];
     this.start_time = Date.now();
     this.defeated_enemy = 0;
     this.background = BackgroundArray[id]
-    this.next_stages = StageArray[id];
+    this.next_stages = StageArray[id]; //[[StageNumbers],[Audios]]
     this.key_states = [];
     this.selectable_text = ["next", "home menu"];
     this.arrow = "→";
     this.arrow_pos = 0;
     this.clear_flag = 0; //0:戦闘中or敗北, 1:ステージクリア, 2:ゲームクリア
     this.next_state = 'select';
+  }
+
+  play_bgm(){
+    if(GameStage.life > 0)this.bgm.play();
+    else if(GameStage.life <= 0){
+      this.bgm.pause();
+      GameStage.gameover_bgm.play();
+    }
+  }
+
+  stop_bgm(){
+    this.bgm.pause();
+    GameStage.gameover_bgm.pause();
   }
 
   // ステージの描画
@@ -112,8 +129,8 @@ class GameStage {
 
       //gse.stages.splice(0, gse.stages.length); // gse.stagesの長さを0にする．不要かも
       gse.stages = this.next_stages;
-      gse.next_stage = gse.stages[gse.arrow_pos];
-      if (this.next_stages[0] == 'clear'){
+      gse.next_stage = gse.stages[0][0];
+      if (this.next_stages[0][0] == 'clear'){
         this.clear_flag = 2;
         this.next_state = 'clear';
       }
@@ -368,11 +385,11 @@ class StartScreen {
 // ステージセレクト画面のクラス
 class StageSelect {
   constructor() {
-    this.stages = [0,1,3];
+    this.stages = [[0],[new Audio('assets/music/bgm/battle1_loop.mp3')]];
     this.arrow = "→";
     this.arrow_pos = 0;
     this.key_states = [];
-    this.next_stage = this.stages[this.arrow_pos];
+    this.next_stage = [this.stages[0][this.arrow_pos],this.stages[1][this.arrow_pos]];
     this.next_state = 'stage'; //'stage' or 'start'
   }
   draw(screen){
@@ -383,8 +400,8 @@ class StageSelect {
     // 1行ずつ描画
     let font_size = 36;
     let addY = 0;
-    for( let i=0; i<this.stages.length; i++ ) {
-      let line = "stage" + Number(this.stages[i]+1).toString();
+    for( let i=0; i<this.stages[0].length; i++ ) {
+      let line = "stage" + Number(this.stages[0][i]+1).toString();
       if ( i ) addY = font_size * i ;
       screen.ctx.fillText( line, screen.height/2, screen.width/3 + addY ) ;
     }
@@ -404,29 +421,29 @@ class StageSelect {
       if (this.arrow_pos > 0) {
         this.arrow_pos -= 1;
       }
-      if (this.arrow_pos < this.stages.length) {
+      if (this.arrow_pos < this.stages[0].length) {
         this.next_state = 'stage';
       }
       else {
         this.next_state = 'start'
       }
-      this.next_stage = this.stages[this.arrow_pos];
+      this.next_stage = this.stages[0][this.arrow_pos];
     }
     if (this.key_states[Key.Down]) {
-      if (this.arrow_pos < this.stages.length) {
+      if (this.arrow_pos < this.stages[0].length) {
         this.arrow_pos += 1;
       }
-      if (this.arrow_pos < this.stages.length) {
+      if (this.arrow_pos < this.stages[0].length) {
         this.next_state = 'stage';
       }
       else {
         this.next_state = 'start'
       }
-      this.next_stage = this.stages[this.arrow_pos];
+      this.next_stage = this.stages[0][this.arrow_pos];
     }
     if (this.key_states[Key.Enter]) {
       game_state = this.next_state;
-      gs = new GameStage(this.next_stage)
+      gs = new GameStage(this.next_stage[0], this.next_stage[1])
     }
   }
 
@@ -614,7 +631,8 @@ let game_state = 'start';
 let start_time = Date.now();
 let ss = new StartScreen();
 let gse = new StageSelect();
-let gs = null;
+let gs = new GameStage(0,new Audio('assets/music/bgm/battle1_loop.mp3'));
+GameStage.gameover_bgm.volume = 0.1;
 let gcs = new GameClearScreen();
 
 
@@ -632,13 +650,16 @@ let game_loop = (timestamp) => {
       ss.draw(start_screen);
       break
     case 'select':
+      gs.stop_bgm();
       gse.draw(select_screen);
       break
     case 'stage':
+      gs.play_bgm();
       gs.draw(game_screen);
       gs.update();
       break
     case 'clear':
+      gs.stop_bgm();
       gcs.draw(game_clear_screen);
       break
     case 'exit':
