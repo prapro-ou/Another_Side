@@ -8,6 +8,8 @@ class GameStage {
   static life = 3;
   static dead_line = 110;
   static gameover_bgm = new Audio('assets/music/bgm/gameover_loop.mp3');
+  static move_sound = new Audio('assets/music/sounds/move_pointer_se.mp3');
+  static enter_sound = new Audio('assets/music/sounds/enter_button_se.mp3');
   constructor(id, bgm = new Audio('assets/music/bgm/battle1_loop.mp3')) {
     this.stage_name = id;
     this.bgm = bgm;
@@ -39,6 +41,41 @@ class GameStage {
   stop_bgm(){
     this.bgm.pause();
     GameStage.gameover_bgm.pause();
+  }
+
+  play_hit_sound(areaAttack){
+    const hit_sound0 = new Audio('assets/music/sounds/punch2_se.mp3');
+    hit_sound0.volume = 0.3;
+    const hit_sound1 = new Audio('assets/music/sounds/explosion_se.mp3');
+    hit_sound1.volume = 0.3;
+    const hit_sound2 = new Audio('assets/music/sounds/sword_se.mp3');
+    hit_sound2.volume = 0.3;
+
+    if(areaAttack == 0) hit_sound0.play();
+    else if(areaAttack == 1) hit_sound1.play();
+    else if(areaAttack == 2) hit_sound2.play();
+  }
+
+  play_defeated_sound(){
+    const defeat_sound = new Audio('assets/music/sounds/defeat_se.mp3');
+    defeat_sound.volume = 0.3;
+    defeat_sound.play();
+  }
+
+  play_sound(key){
+    switch(key){
+      case 'arrow':
+        // this.move_sound.volume = 0.3;
+        GameStage.move_sound.currentTime = 0;
+        GameStage.move_sound.play();
+        break;
+      case 'enter':
+        // StageSelect.enter_sound.volume = 0.3;
+        GameStage.enter_sound.play();
+        break;
+      default:
+        break;
+    }
   }
 
   // ステージの描画
@@ -84,6 +121,7 @@ class GameStage {
       //当たった時の処理
       if(attack.areaAttack == 0){
         if (Math.abs(attack.x - targetEnemy.x) < 10 && Math.abs(attack.y - targetEnemy.y) < 10) {
+          this.play_hit_sound(attack.areaAttack);
           targetEnemy.hp -= attack.power;
 
           if(targetEnemy.hp <= 0) this.defeated_enemy += 1;
@@ -94,6 +132,7 @@ class GameStage {
       }
       else if(attack.areaAttack ==1){
         if (Math.abs(attack.x - targetEnemy.x) < 10 && Math.abs(attack.y - targetEnemy.y) < 10) {
+          this.play_hit_sound(attack.areaAttack);
           this.apply_area_damage(targetEnemy.x, targetEnemy.y, attack.power);
 
           const index = this.attacks.indexOf(attack);
@@ -203,6 +242,7 @@ class GameStage {
     .forEach((enemy) => {
       const distance = Math.sqrt((x - enemy.x) ** 2 + (y - enemy.y) ** 2);
       if (distance <= 10) {
+        this.play_hit_sound(2);
         enemy.hp -= damage;
         if(enemy.hp <= 0) this.defeated_enemy += 1;
       }
@@ -226,6 +266,7 @@ class GameStage {
   // 敵が防衛ラインに到達したか？
   reach(enemy) {
     if (enemy.x <= GameStage.dead_line) {
+      this.play_defeated_sound();
       enemy.hp_update(enemy.hp);
       GameStage.life -= 1;
       this.defeated_enemy += 1;
@@ -239,6 +280,7 @@ class GameStage {
     // クリアすると操作可能
     if (this.clear_flag){
       if (this.key_states[Key.Up]) {
+        this.play_sound('arrow');
         if (this.arrow_pos > 0) {
           this.arrow_pos -= 1;
         }
@@ -255,6 +297,7 @@ class GameStage {
         }
       }
       if (this.key_states[Key.Down]) {
+        this.play_sound('arrow');
         if (this.arrow_pos < this.selectable_text.length-1) {
           this.arrow_pos += 1;
         }
@@ -271,6 +314,7 @@ class GameStage {
         }
       }
       if (this.key_states[Key.Enter]) {
+        this.play_sound('enter');
         game_state = this.next_state;
       }
     }
@@ -331,6 +375,8 @@ class GameStage {
 /// StartScreen
 ////////////////////////////////////////////////////////////////
 class StartScreen {
+  static move_sound = new Audio('assets/music/sounds/move_pointer_se.mp3');
+  static enter_sound = new Audio('assets/music/sounds/enter_button_se.mp3');
   constructor(){
     this.title = "Game";
     this.selectable_text = ["start", "quit"];
@@ -363,6 +409,23 @@ class StartScreen {
     screen.ctx.fillText(this.arrow, screen.height/2-36, screen.width/3 + this.arrow_pos*36) ;
   }
 
+  play_sound(key){
+    switch(key){
+      case 'arrow':
+        // this.move_sound.volume = 0.3;
+        StartScreen.move_sound.currentTime = 0;
+        StartScreen.move_sound.play();
+        break;
+      case 'enter':
+        // StageSelect.enter_sound.volume = 0.3;
+        StartScreen.enter_sound.play();
+        break;
+      default:
+        break;
+    }
+  }
+
+
   //key()
   toggle_key(key_symbol, state) {
     this.key_states[key_symbol] = state;
@@ -370,14 +433,17 @@ class StartScreen {
     if (debug) console.log(this.next_state);
 
     if (this.key_states[Key.Up]) {
+      this.play_sound('arrow');
       this.arrow_pos = 0;
       this.next_state = 'select';
     }
     if (this.key_states[Key.Down]) {
+      this.play_sound('arrow');
       this.arrow_pos = 1;
       this.next_state = 'exit';
     }
     if (this.key_states[Key.Enter]) {
+      this.play_sound('enter');
       game_state = this.next_state;
     }
   }
@@ -388,6 +454,8 @@ class StartScreen {
 ////////////////////////////////////////////////////////////////
 // ステージセレクト画面のクラス
 class StageSelect {
+  static move_sound = new Audio('assets/music/sounds/move_pointer_se.mp3');
+  static enter_sound = new Audio('assets/music/sounds/enter_button_se.mp3');
   constructor() {
     this.stages = [[0],[new Audio('assets/music/bgm/battle1_loop.mp3')]];
     this.arrow = "→";
@@ -413,7 +481,21 @@ class StageSelect {
     screen.ctx.fillText(this.arrow, screen.height/2-36, screen.width/3 + this.arrow_pos*36) ;
   }
 
-  //addstages()
+  play_sound(key){
+    switch(key){
+      case 'arrow':
+        // this.move_sound.volume = 0.3;
+        StageSelect.move_sound.currentTime = 0;
+        StageSelect.move_sound.play();
+        break;
+      case 'enter':
+        // StageSelect.enter_sound.volume = 0.3;
+        StageSelect.enter_sound.play();
+        break;
+      default:
+        break;
+    }
+  }
 
   //key()
   toggle_key(key_symbol, state) {
@@ -422,6 +504,7 @@ class StageSelect {
     if (debug) console.log(this.next_stage);
 
     if (this.key_states[Key.Up]) {
+      this.play_sound('arrow');
       if (this.arrow_pos > 0) {
         this.arrow_pos -= 1;
       }
@@ -434,6 +517,7 @@ class StageSelect {
       this.next_stage = [this.stages[0][this.arrow_pos],this.stages[1][this.arrow_pos]];
     }
     if (this.key_states[Key.Down]) {
+      this.play_sound('arrow');
       if (this.arrow_pos < this.stages[0].length) {
         this.arrow_pos += 1;
       }
@@ -446,6 +530,7 @@ class StageSelect {
       this.next_stage = [this.stages[0][this.arrow_pos],this.stages[1][this.arrow_pos]];
     }
     if (this.key_states[Key.Enter]) {
+      this.play_sound('enter');
       game_state = this.next_state;
       gs = new GameStage(this.next_stage[0], this.next_stage[1])
     }
