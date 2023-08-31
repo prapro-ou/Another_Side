@@ -21,10 +21,10 @@ class GameStage {
     this.background = BackgroundArray[id]
     this.next_stages = StageArray[id]; //[[StageNumbers],[Audios]]
     this.key_states = [];
-    this.selectable_text = ["next", "home menu"];
+    this.selectable_text = ["next", "home menu" ,"リロードでスタート画面に戻る"];
     this.arrow = "→";
     this.arrow_pos = 0;
-    this.clear_flag = 0; //0:戦闘中or敗北, 1:ステージクリア, 2:ゲームクリア
+    this.clear_flag = 0; //0:戦闘中, 1:ステージクリア, 2:ゲームクリア 
     this.next_state = 'select';
   }
 
@@ -119,7 +119,11 @@ class GameStage {
       screen.ctx.fillStyle = "#FF0000";
       screen.ctx.font = ' 100px sans-serif';
       screen.ctx.fillText("GAME OVER",screen.height/3, screen.width/4);
-      game_state = 'select'
+      this.next_state = 'select'
+
+      screen.ctx.font = ' 36px sans-serif';
+      screen.ctx.fillText( this.selectable_text[2], screen.height/2, screen.width/3 );
+
       return;
     }
     else if ((GameStage.life > 0) && (this.defeated_enemy == this.enemys.length)){
@@ -129,7 +133,7 @@ class GameStage {
 
       //gse.stages.splice(0, gse.stages.length); // gse.stagesの長さを0にする．不要かも
       gse.stages = this.next_stages;
-      gse.next_stage = gse.stages[0][0];
+      gse.next_stage = [gse.stages[0][0],gse.stages[1][0]];
       if (this.next_stages[0][0] == 'clear'){
         this.clear_flag = 2;
         this.next_state = 'clear';
@@ -142,7 +146,7 @@ class GameStage {
       screen.ctx.font = ' 36px sans-serif';
       let font_size = 36;
       let addY = 0;
-      for( let i=0; i<this.selectable_text.length; i++ ) {
+      for( let i=0; i<this.selectable_text.length-1; i++ ) {
         let line = this.selectable_text[i] ;
         if ( i ) addY = font_size * i ;
         screen.ctx.fillText( line, screen.height/2, screen.width/3 + addY);
@@ -427,7 +431,7 @@ class StageSelect {
       else {
         this.next_state = 'start'
       }
-      this.next_stage = this.stages[0][this.arrow_pos];
+      this.next_stage = [this.stages[0][this.arrow_pos],this.stages[1][this.arrow_pos]];
     }
     if (this.key_states[Key.Down]) {
       if (this.arrow_pos < this.stages[0].length) {
@@ -439,7 +443,7 @@ class StageSelect {
       else {
         this.next_state = 'start'
       }
-      this.next_stage = this.stages[0][this.arrow_pos];
+      this.next_stage = [this.stages[0][this.arrow_pos],this.stages[1][this.arrow_pos]];
     }
     if (this.key_states[Key.Enter]) {
       game_state = this.next_state;
