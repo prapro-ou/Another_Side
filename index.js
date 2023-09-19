@@ -99,14 +99,15 @@ class GameStage {
       enemy.draw(screen);
     });
 
-    this.players.forEach(player =>{
-      const now = Date.now();
-      if((now - player.last_attacked_time)/1000 > player.attack_interval && this.is_not_enemy_empty()){
-        this.attacks.push(player.update(this.find_nearest_enemy()));
-        player.last_attacked_time = now;
-      }
-    });
-
+    if(GameStage.life > 0){
+      this.players.forEach(player =>{
+        const now = Date.now();
+        if((now - player.last_attacked_time)/1000 > player.attack_interval && this.is_not_enemy_empty()){
+          this.attacks.push(player.update(this.find_nearest_enemy()));
+          player.last_attacked_time = now;
+        }
+      });
+    }
 
     this.attacks.forEach(attack => {
       //現状は狙った敵が死んだ後に攻撃対象を別の敵に変更する
@@ -162,7 +163,7 @@ class GameStage {
       this.next_state = 'select'
 
       screen.ctx.font = ' 36px sans-serif';
-      screen.ctx.fillText( this.selectable_text[2], screen.height/2, screen.width/3 );
+      screen.ctx.fillText( this.selectable_text[this.selectable_text.length-1], screen.height/2, screen.width/3 );
 
       return;
     }
@@ -254,13 +255,14 @@ class GameStage {
     // this.players.forEach(player => {
     //   player.update();
     // });
-
-    this.enemys
-    .filter(enemy => (enemy.pop_time <= (Date.now() - this.start_time)/1000) && enemy.hp > 0)
-    .forEach(enemy => {
-      enemy.pos_update();
-      this.reach(enemy);
-    });
+    if(GameStage.life > 0){
+      this.enemys
+      .filter(enemy => (enemy.pop_time <= (Date.now() - this.start_time)/1000) && enemy.hp > 0)
+      .forEach(enemy => {
+        enemy.pos_update();
+        this.reach(enemy);
+      });
+    }
   }
 
   // 敵が防衛ラインに到達したか？
@@ -360,16 +362,14 @@ class GameStage {
 
 }
 
-function power_up_character() {
+function power_up_player() {
   gs.players.forEach(player => {
-    player.power_up();
+    player.level_up();
   });
 }
 
 function add_life() {
-  if (GameStage.life < 3) {
-    GameStage.life += 1;
-  }
+  GameStage.life += 1;
 }
 
 ////////////////////////////////////////////////////////////////
