@@ -1,5 +1,5 @@
 import { Key, KeyBind } from "./lib/keybind.js";
-import { BackgroundArray, EnemyArray, PlayerArray, StageArray } from "./lib/character_array.js";
+import { BackgroundArray, EnemyArray, PlayerArray, StageArray, add_player } from "./lib/character_array.js";
 
 const debug = true;
 // GameStage
@@ -23,7 +23,7 @@ class GameStage {
     this.background = BackgroundArray[id]
     this.next_stages = StageArray[id]; //[[StageNumbers],[Audios]]
     this.key_states = [];
-    this.selectable_text = ["next", "home menu" ,"リロードでスタート画面に戻る"];
+    this.selectable_text = ["キャラクター追加", "キャラクター強化", "回復", "リロードでスタート画面に戻る"];
     this.arrow = "→";
     this.arrow_pos = 0;
     this.clear_flag = 0; //0:戦闘中, 1:ステージクリア, 2:ゲームクリア 
@@ -154,6 +154,7 @@ class GameStage {
     screen.ctx.fillText(`撃破数: ${this.defeated_enemy} / ${this.enemys.length}`, 500, 50)
 
     // ゲームオーバー処理
+    // 負けたとき
     if (GameStage.life <= 0) {
       screen.ctx.fillStyle = "#FF0000";
       screen.ctx.font = ' 100px sans-serif';
@@ -165,6 +166,7 @@ class GameStage {
 
       return;
     }
+    // 勝ったとき
     else if ((GameStage.life > 0) && (this.defeated_enemy == this.enemys.length)){
       screen.ctx.fillStyle = "#FF0000";
       screen.ctx.font = ' 100px sans-serif';
@@ -175,11 +177,9 @@ class GameStage {
       gse.next_stage = [gse.stages[0][0],gse.stages[1][0]];
       if (this.next_stages[0][0] == 'clear'){
         this.clear_flag = 2;
-        this.next_state = 'clear';
       }
       else {
         this.clear_flag = 1;
-        this.next_state = 'select';
       }
 
       screen.ctx.font = ' 36px sans-serif';
@@ -284,37 +284,26 @@ class GameStage {
         if (this.arrow_pos > 0) {
           this.arrow_pos -= 1;
         }
-        if (this.arrow_pos == 0){
-          if (this.clear_flag == 2){
-            this.next_state = 'clear';
-          }
-          else {
-            this.next_state = 'select';
-          }
-        }
-        else {
-          this.next_state = 'start';
-        }
       }
       if (this.key_states[Key.Down]) {
         this.play_sound('arrow');
-        if (this.arrow_pos < this.selectable_text.length-1) {
+        if (this.arrow_pos < this.selectable_text.length-2) {
           this.arrow_pos += 1;
-        }
-        if (this.arrow_pos == 0){
-          if (this.clear_flag == 2){
-            this.next_state = 'clear';
-          }
-          else {
-            this.next_state = 'select';
-          }
-        }
-        else {
-          this.next_state = 'start';
         }
       }
       if (this.key_states[Key.Enter]) {
         this.play_sound('enter');
+        switch (this.arrow_pos) {
+          case 0:
+            add_player();
+            break;
+          case 1:
+            power_up_player();
+            break;
+          case 2:
+            add_life();
+            break;
+        }
         game_state = this.next_state;
       }
     }
@@ -369,6 +358,18 @@ class GameStage {
     }
   }
 
+}
+
+function power_up_character() {
+  gs.players.forEach(player => {
+    player.power_up();
+  });
+}
+
+function add_life() {
+  if (GameStage.life < 3) {
+    GameStage.life += 1;
+  }
 }
 
 ////////////////////////////////////////////////////////////////
