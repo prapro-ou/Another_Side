@@ -1,5 +1,6 @@
 import { Key, KeyBind } from "./lib/keybind.js";
 import { BackgroundArray, EnemyArray, PlayerArray, StageArray, add_player } from "./lib/character_array.js";
+import { Skeleton_knight, Slime, Assasin, Mummy, Ghost1, Ghost2, Goblin_archer, Satan, Skeleton_king } from "./lib/character.js";
 
 const debug = true;
 // GameStage
@@ -8,6 +9,7 @@ class GameStage {
   static life = 3;
   static dead_line = 110;
   static gameover_bgm = new Audio('assets/music/bgm/gameover_loop.mp3');
+  static clear_stage_bgm = new Audio('assets/music/bgm/stage_clear_loop.mp3');
   static move_sound = new Audio('assets/music/sounds/move_pointer_se.mp3');
   static enter_sound = new Audio('assets/music/sounds/enter_button_se.mp3');
   constructor(id, bgm = new Audio('assets/music/bgm/battle1_loop.mp3')) {
@@ -17,11 +19,12 @@ class GameStage {
     this.bgm.loop = true;
     this.players = PlayerArray;
     this.enemys = EnemyArray[id];
+    this.skills = []; //[[player, time], ...]　発動中のスキルを保存する
     this.attacks = [];
     this.start_time = Date.now();
     this.defeated_enemy = 0;
     this.background = BackgroundArray[id]
-    this.next_stages = StageArray[id]; //[[StageNumbers],[Audios]]
+    this.next_stages = StageArray[id]; //[[StageNumbers],[Audios]] 
     this.key_states = [];
     this.selectable_text = ["キャラクター追加", "キャラクター強化", "回復", "リロードでスタート画面に戻る"];
     this.arrow = "→";
@@ -31,7 +34,13 @@ class GameStage {
   }
 
   play_bgm(){
-    if(GameStage.life > 0)this.bgm.play();
+    if(GameStage.life > 0 && this.clear_flag == 0){
+      this.bgm.play();
+    }
+    else if(GameStage.life > 0 && this.clear_flag == 1){
+      this.bgm.pause();
+      GameStage.clear_stage_bgm.play();
+    }
     else if(GameStage.life <= 0){
       this.bgm.pause();
       GameStage.gameover_bgm.play();
@@ -40,6 +49,8 @@ class GameStage {
 
   stop_bgm(){
     this.bgm.pause();
+    GameStage.clear_stage_bgm.pause();
+    GameStage.clear_stage_bgm.currentTime = 0;
     GameStage.gameover_bgm.pause();
   }
 
@@ -78,11 +89,95 @@ class GameStage {
     }
   }
 
+  skill_init(){
+    this.players.forEach(player => {
+     player.next_skill_avalable_time = Date.now() + player.skill_1st_cooltime;
+    });
+  }
+
+  start_skill(skills){
+    switch(player.constructor){
+      case Skeleton_knight:
+        player.start_skill(this.players);
+        break;
+      case Slime:
+        player.start_skill();
+        break;
+      case Ghost1:
+        player.start_skill();
+        break;
+      case Goblin_archer:
+        player.start_skill();
+        break;
+      case Mummy:
+        player.start_skill(this.enemys);
+        break;
+      case Ghost2:
+        player.start_skill(this.enemys);
+        break;
+      case Assasin:
+        player.start_skill(this.enemys);
+        break;
+      case Skeleton_king:
+        player.start_skill();
+        break;
+      case Satan:
+        player.start_skill();
+        break;
+      default:
+        break;
+    }
+  }
+
+  end_skills(skills){
+    const now = Date.now();
+    skills.forEach(([player, time]) => {
+      if(now < time){
+        return;
+      }
+      switch(player.constructor){
+        case Skeleton_knight:
+          player.end_skill(this.players);
+          break;
+        case Slime:
+          player.end_skill();
+          break;
+        case Ghost1:
+          player.end_skill();
+          break;
+        case Goblin_archer:
+          player.end_skill();
+          break;
+        case Mummy:
+          player.end_skill(this.enemys);
+          break;
+        case Ghost2:
+          player.end_skill(this.enemys);
+          break;
+        case Assasin:
+          player.end_skill(this.enemys);
+          break;
+        case Skeleton_king:
+          player.end_skill();
+          break;
+        case Satan:
+          player.end_skill();
+          break;
+        default:
+          break;
+      }
+      player.next_skill_avalable_time = now + player.skill_cooltime;
+      //TODO，skillsから終了したスキルをpopする
+    });
+  }
+
   // ステージの描画
   draw(screen) {
     screen.clear();
 
     if (debug) console.log(`next_stages[0] is ${this.next_stages[0]}`)
+
+    this.end_skills(this.skills);
 
     //背景画像の描画
     screen.sprites.pop();
@@ -310,49 +405,60 @@ class GameStage {
       }
     }
 
+    const now = Date.now();
+
     if (this.key_states[Key.Skill_1]) {
-      if (this.players.length > 0) {
-        this.players[0].skill
+      if (this.players[0] != undefined && now > this.players[0].next_skill_avalable_time) {
+        this.start_skill(this.players[0]);
+        this.skills.push([this.players[0],now]);
       }
     }
     if (this.key_states[Key.Skill_2]) {
-      if (this.players.length > 1) {
-        this.players[1].skill
+      if (this.players[1] != undefined && now > this.players[1].next_skill_avalable_time) {
+        this.start_skill(this.players[1]);
+        this.skills.push([this.players[1],now]);
       }
     }
     if (this.key_states[Key.Skill_3]) {
-      if (this.players.length > 2) {
-        this.players[2].skill
+      if (this.players[2] != undefined && now > this.players[2].next_skill_avalable_time) {
+        this.start_skill(this.players[2]);
+        this.skills.push([this.players[2],now]);
       }
     }
     if (this.key_states[Key.Skill_4]) {
-      if (this.players.length > 3) {
-        this.players[3].skill
+      if (this.players[3] != undefined && now > this.players[3].next_skill_avalable_time) {
+        this.start_skill(this.players[3]);
+        this.skills.push([this.players[3],now]);
       }
     }
     if (this.key_states[Key.Skill_5]) {
-      if (this.players.length > 4) {
-        this.players[4].skill
+      if (this.players[4] != undefined && now > this.players[4].next_skill_avalable_time) {
+        this.start_skill(this.players[4]);
+        this.skills.push([this.players[4],now]);
       }
     }
     if (this.key_states[Key.Skill_6]) {
-      if (this.players.length > 5) {
-        this.players[5].skill
+      if (this.players[5] != undefined && now > this.players[5].next_skill_avalable_time) {
+        this.start_skill(this.players[5]);
+        this.skills.push([this.players[5],now]);
       }
     }
     if (this.key_states[Key.Skill_7]) {
-      if (this.players.length > 6) {
-        this.players[6].skill
+      if (this.players[6] != undefined && now > this.players[6].next_skill_avalable_time) {
+        this.start_skill(this.players[6]);
+        this.skills.push([this.players[6],now]);
       }
     }
     if (this.key_states[Key.Skill_8]) {
-      if (this.players.length > 7) {
-        this.players[7].skill
+      if (this.players[7] != undefined && now > this.players[7].next_skill_avalable_time) {
+        this.start_skill(this.players[7]);
+        this.skills.push([this.players[7],now]);
       }
     }
     if (this.key_states[Key.Skill_9]) {
-      if (this.players.length > 8) {
-        this.players[8].skill
+      if (this.players[8] != undefined && now > this.players[8].next_skill_avalable_time) {
+        this.start_skill(this.players[8]);
+        this.skills.push([this.players[8],now]);
       }
     }
     if (this.key_states[Key.Escape]) {
@@ -534,6 +640,7 @@ class StageSelect {
       this.play_sound('enter');
       game_state = this.next_state;
       gs = new GameStage(this.next_stage[0], this.next_stage[1])
+      gs.skill_init();
     }
   }
 
