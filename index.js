@@ -19,10 +19,9 @@ class GameStage {
     this.bgm.loop = true;
     this.players = PlayerArray;
     this.enemys = EnemyArray[id];
-    this.skills = []; //[[player, time], ...]　発動中のスキルを保存する
     this.attacks = [];
     this.start_time = Date.now();
-    this.defeated_enemy = 0;
+    this.defeated_enemy = [];
     this.background = BackgroundArray[id]
     this.next_stages = StageArray[id]; //[[StageNumbers],[Audios]] 
     this.key_states = [];
@@ -95,79 +94,107 @@ class GameStage {
     });
   }
 
-  start_skill(skills){
-    switch(player.constructor){
-      case Skeleton_knight:
-        player.start_skill(this.players);
-        break;
-      case Slime:
-        player.start_skill();
-        break;
-      case Ghost1:
-        player.start_skill();
-        break;
-      case Goblin_archer:
-        player.start_skill();
-        break;
-      case Mummy:
-        player.start_skill(this.enemys);
-        break;
-      case Ghost2:
-        player.start_skill(this.enemys);
-        break;
-      case Assasin:
-        player.start_skill(this.enemys);
-        break;
-      case Skeleton_king:
-        player.start_skill();
-        break;
-      case Satan:
-        player.start_skill();
-        break;
-      default:
-        break;
-    }
-  }
-
-  end_skills(skills){
-    const now = Date.now();
-    skills.forEach(([player, time]) => {
-      if(now < time){
-        return;
-      }
+  start_skill(player){
+    const time = Date.now()
+    if(time > player.next_skill_avalable_time && player.skill_flag == 0){
       switch(player.constructor){
         case Skeleton_knight:
-          player.end_skill(this.players);
+          player.start_skill(this.players);
+          player.end_skill_time = time + player.skill_duration;
+          player.skill_flag = 1;
           break;
         case Slime:
-          player.end_skill();
+          player.start_skill();
+          player.end_skill_time = time + player.skill_duration;
+          player.skill_flag = 1;
           break;
         case Ghost1:
-          player.end_skill();
+          player.start_skill();
+          player.end_skill_time = time + player.skill_duration;
+          player.skill_flag = 1;
           break;
         case Goblin_archer:
-          player.end_skill();
+          player.start_skill();
+          player.end_skill_time = time + player.skill_duration;
+          player.skill_flag = 1;
           break;
         case Mummy:
-          player.end_skill(this.enemys);
+          player.start_skill(this.enemys);
+          player.end_skill_time = time + player.skill_duration;
+          player.skill_flag = 1;
           break;
         case Ghost2:
-          player.end_skill(this.enemys);
+          player.start_skill(this.enemys, this.start_time);
+          player.end_skill_time = time + player.skill_duration;
+          player.skill_flag = 1;
           break;
         case Assasin:
-          player.end_skill(this.enemys);
+          player.start_skill(this.attacks);
+          player.end_skill_time = time + player.skill_duration;
+          player.skill_flag = 1;
           break;
         case Skeleton_king:
-          player.end_skill();
+          player.start_skill();
+          player.end_skill_time = time + player.skill_duration;
+          player.skill_flag = 1;
           break;
         case Satan:
-          player.end_skill();
+          player.start_skill();
+          player.end_skill_time = time + player.skill_duration;
+          player.skill_flag = 1;
           break;
         default:
           break;
       }
-      player.next_skill_avalable_time = now + player.skill_cooltime;
-      //TODO，skillsから終了したスキルをpopする
+    }
+  }
+
+  end_skills(){
+    const now = Date.now();
+    this.players.forEach(player => {
+      if((now > player.end_skill_time && player.skill_flag == 1) || this.clear_flag == 1){
+        switch(player.constructor){
+          case Skeleton_knight:
+            player.end_skill(this.players);
+            player.skill_flag = 0;
+            break;
+          case Slime:
+            player.end_skill();
+            player.skill_flag = 0;
+            break;
+          case Ghost1:
+            player.end_skill();
+            player.skill_flag = 0;
+            break;
+          case Goblin_archer:
+            player.end_skill();
+            player.skill_flag = 0;
+            break;
+          case Mummy:
+            player.end_skill(this.enemys);
+            player.skill_flag = 0;
+            break;
+          case Ghost2:
+            player.end_skill();
+            player.skill_flag = 0;
+            break;
+          case Assasin:
+            player.end_skill();
+            player.skill_flag = 0;
+            break;
+          case Skeleton_king:
+            player.end_skill();
+            player.skill_flag = 0;
+            break;
+          case Satan:
+            player.end_skill();
+            player.skill_flag = 0;
+            break;
+          default:
+            break;
+        }
+        player.next_skill_avalable_time = now + player.skill_cooltime;
+      }
     });
   }
 
@@ -176,8 +203,9 @@ class GameStage {
     screen.clear();
 
     if (debug) console.log(`next_stages[0] is ${this.next_stages[0]}`)
+    if (debug) console.log(`1st character skill state: ${this.players[0].skill_flag}`)
 
-    this.end_skills(this.skills);
+    this.end_skills();
 
     //背景画像の描画
     screen.sprites.pop();
@@ -187,6 +215,8 @@ class GameStage {
     this.players.forEach(player => {
       player.draw(screen);
     });
+
+    this.defeated_enemy = this.enemys.filter(enemy => enemy.hp <= 0)
 
     this.enemys
     .filter(enemy => (enemy.pop_time <= (Date.now() - this.start_time )/1000) && enemy.hp > 0)
@@ -220,8 +250,6 @@ class GameStage {
           this.play_hit_sound(attack.areaAttack);
           targetEnemy.hp -= attack.power;
 
-          if(targetEnemy.hp <= 0) this.defeated_enemy += 1;
-
           const index = this.attacks.indexOf(attack);
           this.attacks.splice(index, 1);
         }
@@ -229,14 +257,14 @@ class GameStage {
       else if(attack.areaAttack ==1){
         if (Math.abs(attack.x - targetEnemy.x) < 10 && Math.abs(attack.y - targetEnemy.y) < 10) {
           this.play_hit_sound(attack.areaAttack);
-          this.apply_area_damage(targetEnemy.x, targetEnemy.y, attack.power);
+          this.apply_area_damage(targetEnemy.x, targetEnemy.y, attack.power, attack.distance);
 
           const index = this.attacks.indexOf(attack);
           this.attacks.splice(index, 1);
         }
       }
       else if(attack.areaAttack ==2){
-        this.apply_penetration_damage(attack.x, attack.y, attack.power);
+        this.apply_penetration_damage(attack.x, attack.y, attack.power, attack.distance);
         if(attack.x > 1024){
           const index = this.attacks.indexOf(attack);
           this.attacks.splice(index, 1);
@@ -247,7 +275,7 @@ class GameStage {
     screen.ctx.fillStyle = "#FF0000";
     screen.ctx.font = ' 36px sans-serif';
     screen.ctx.fillText(`残機: ${GameStage.life}`, 20, 50);
-    screen.ctx.fillText(`撃破数: ${this.defeated_enemy} / ${this.enemys.length}`, 500, 50)
+    screen.ctx.fillText(`撃破数: ${this.defeated_enemy.length} / ${this.enemys.length}`, 500, 50)
 
     // ゲームオーバー処理
     // 負けたとき
@@ -263,7 +291,9 @@ class GameStage {
       return;
     }
     // 勝ったとき
-    else if ((GameStage.life > 0) && (this.defeated_enemy == this.enemys.length)){
+    else if ((GameStage.life > 0) && (this.defeated_enemy.length == this.enemys.length)){
+      this.end_skills();
+
       screen.ctx.fillStyle = "#FF0000";
       screen.ctx.font = ' 100px sans-serif';
       screen.ctx.fillText("STAGE CLEAR",screen.height/3, screen.width/4);
@@ -320,27 +350,25 @@ class GameStage {
   }
 
   //範囲攻撃の定義
-  apply_area_damage(x, y, damage){
+  apply_area_damage(x, y, damage, dist){
     this.enemys
     .filter(enemy => enemy.hp > 0)
     .forEach((enemy) => {
       const distance = Math.sqrt((x - enemy.x) ** 2 + (y - enemy.y) ** 2);
-      if (distance <= 50) {
+      if (distance <= dist) {
         enemy.hp -= damage;
-        if(enemy.hp <= 0) this.defeated_enemy += 1;
       }
     });
   }
 
-  apply_penetration_damage(x, y, damage){
+  apply_penetration_damage(x, y, damage, dist){
     this.enemys
     .filter(enemy => enemy.hp > 0)
     .forEach((enemy) => {
       const distance = Math.sqrt((x - enemy.x) ** 2 + (y - enemy.y) ** 2);
-      if (distance <= 10) {
+      if (distance <= dist) {
         this.play_hit_sound(2);
         enemy.hp -= damage;
-        if(enemy.hp <= 0) this.defeated_enemy += 1;
       }
     });
   }
@@ -366,7 +394,7 @@ class GameStage {
       this.play_defeated_sound();
       enemy.hp_update(enemy.hp);
       GameStage.life -= 1;
-      this.defeated_enemy += 1;
+      enemy.hp = 0;
     }
   }
 
@@ -405,60 +433,49 @@ class GameStage {
       }
     }
 
-    const now = Date.now();
-
     if (this.key_states[Key.Skill_1]) {
-      if (this.players[0] != undefined && now > this.players[0].next_skill_avalable_time) {
+      if (this.players[0] != undefined) {
         this.start_skill(this.players[0]);
-        this.skills.push([this.players[0],now]);
       }
     }
     if (this.key_states[Key.Skill_2]) {
-      if (this.players[1] != undefined && now > this.players[1].next_skill_avalable_time) {
+      if (this.players[1] != undefined) {
         this.start_skill(this.players[1]);
-        this.skills.push([this.players[1],now]);
       }
     }
     if (this.key_states[Key.Skill_3]) {
-      if (this.players[2] != undefined && now > this.players[2].next_skill_avalable_time) {
+      if (this.players[2] != undefined) {
         this.start_skill(this.players[2]);
-        this.skills.push([this.players[2],now]);
       }
     }
     if (this.key_states[Key.Skill_4]) {
-      if (this.players[3] != undefined && now > this.players[3].next_skill_avalable_time) {
+      if (this.players[3] != undefined) {
         this.start_skill(this.players[3]);
-        this.skills.push([this.players[3],now]);
       }
     }
     if (this.key_states[Key.Skill_5]) {
-      if (this.players[4] != undefined && now > this.players[4].next_skill_avalable_time) {
+      if (this.players[4] != undefined) {
         this.start_skill(this.players[4]);
-        this.skills.push([this.players[4],now]);
       }
     }
     if (this.key_states[Key.Skill_6]) {
-      if (this.players[5] != undefined && now > this.players[5].next_skill_avalable_time) {
+      if (this.players[5] != undefined) {
         this.start_skill(this.players[5]);
-        this.skills.push([this.players[5],now]);
       }
     }
     if (this.key_states[Key.Skill_7]) {
-      if (this.players[6] != undefined && now > this.players[6].next_skill_avalable_time) {
+      if (this.players[6] != undefined) {
         this.start_skill(this.players[6]);
-        this.skills.push([this.players[6],now]);
       }
     }
     if (this.key_states[Key.Skill_8]) {
-      if (this.players[7] != undefined && now > this.players[7].next_skill_avalable_time) {
+      if (this.players[7] != undefined) {
         this.start_skill(this.players[7]);
-        this.skills.push([this.players[7],now]);
       }
     }
     if (this.key_states[Key.Skill_9]) {
-      if (this.players[8] != undefined && now > this.players[8].next_skill_avalable_time) {
+      if (this.players[8] != undefined) {
         this.start_skill(this.players[8]);
-        this.skills.push([this.players[8],now]);
       }
     }
     if (this.key_states[Key.Escape]) {
