@@ -23,12 +23,12 @@ class GameStage {
     this.start_time = Date.now();
     this.defeated_enemy = [];
     this.background = BackgroundArray[id]
-    this.next_stages = StageArray[id]; //[[StageNumbers],[Audios]] 
+    this.next_stages = StageArray[id]; //[[StageNumbers],[Audios]]
     this.key_states = [];
     this.selectable_text = ["キャラクター追加", "キャラクター強化", "回復", "リロードでスタート画面に戻る"];
     this.arrow = "→";
     this.arrow_pos = 0;
-    this.clear_flag = 0; //0:戦闘中, 1:ステージクリア, 2:ゲームクリア 
+    this.clear_flag = 0; //0:戦闘中, 1:ステージクリア, 2:ゲームクリア
     this.next_state = 'select';
   }
 
@@ -95,7 +95,7 @@ class GameStage {
   }
 
   start_skill(player){
-    const time = Date.now()
+    const time = Date.now();
     if(time > player.next_skill_avalable_time && player.skill_flag == 0){
       switch(player.constructor){
         case Skeleton_knight:
@@ -152,7 +152,7 @@ class GameStage {
   end_skills(){
     const now = Date.now();
     this.players.forEach(player => {
-      if((now > player.end_skill_time && player.skill_flag == 1) || this.clear_flag == 1){
+      if((now > player.end_skill_time || this.clear_flag == 1)&& player.skill_flag == 1){
         switch(player.constructor){
           case Skeleton_knight:
             player.end_skill(this.players);
@@ -292,7 +292,6 @@ class GameStage {
     }
     // 勝ったとき
     else if ((GameStage.life > 0) && (this.defeated_enemy.length == this.enemys.length)){
-      this.end_skills();
 
       screen.ctx.fillStyle = "#FF0000";
       screen.ctx.font = ' 100px sans-serif';
@@ -429,6 +428,7 @@ class GameStage {
             add_life();
             break;
         }
+        this.end_skills();
         game_state = this.next_state;
       }
     }
