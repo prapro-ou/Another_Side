@@ -302,6 +302,7 @@ class GameStage {
       gse.next_stage = [gse.stages[0][0],gse.stages[1][0]];
       if (this.next_stages[0][0] == 'clear'){
         this.clear_flag = 2;
+        game_state = 'clear';
       }
       else {
         this.clear_flag = 1;
